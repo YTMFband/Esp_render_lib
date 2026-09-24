@@ -1,0 +1,382 @@
+local __Camera = workspace.CurrentCamera;
+local __Users = game:GetService('Players');
+local __RunService = game:GetService('RunService')
+
+local Esp_Render = getgenv().Esp_Render
+if not Esp_Render then
+    Esp_Render = {
+        Enabled = true;
+
+        Box_Render = {
+            Enabled = true;
+            Type_Render = {'Corner'}; --- I wanted make box + corner but useless
+            fill = Color3.new(1, 1, 1),
+            outline = Color3.new(0,0,0),
+        },
+
+        Name_Render = {
+            Enabled = true;
+            Size = 13;
+            AutoSize = true;
+            Position = 'Up', -- Or 'Down' or 'Up'
+            Color = Color3.new(1,1,1),
+        },
+
+        EspInstance = {};
+        EspFunctions = {};
+        CachedRbxConnections = {};
+    }
+end
+
+
+
+function Esp_Render.EspFunctions.ResolveTarget(p1: Instance?)
+    if not p1 or not p1:IsA('BasePart') then return end
+    local v2 = p1.Position
+    local maxDim = math.max(p1.Size.X, p1.Size.Y, p1.Size.Z)
+    local v4 = maxDim * 0.5
+    local v3 = __Camera:WorldToViewportPoint(v2)
+    if v3.Z <= 0 then
+        return
+    end
+
+    local scale = (__Camera.ViewportSize.Y / (math.tan(math.rad(__Camera.FieldOfView) * 0.5) * 2))
+    local height = (scale / v3.Z) * 6
+    local width = height * 0.6
+
+    height = math.max(height, 7)
+    width = math.max(width, 5)
+    
+    return Vector2.new(v3.X, v3.Y), Vector2.new(width, height)
+end
+
+function Esp_Render.EspFunctions.ResolveText(p1)
+    if not p1 or not p1:IsA('BasePart') then return end
+    local v3 = __Camera:WorldToViewportPoint(p1.Position)
+    if v3.Z <= 0 then
+        return
+    end
+    
+    local scale = (__Camera.ViewportSize.Y / (math.tan(math.rad(__Camera.FieldOfView) * 0.5) * 2))
+    local calculatedSize = (scale / v3.Z) * 0.5 
+    local minSize = 10
+    local maxSize = Esp_Render.Name_Render.Size or 18
+    return math.clamp(calculatedSize, minSize, maxSize)
+end
+
+function Esp_Render.EspFunctions.add_box(p1:Instance?)
+    if not p1 or (Esp_Render.EspInstance[p1] and Esp_Render.EspInstance[p1].Box) then return end
+    local Box = {}
+    Box.Box = {}
+    Box.Corner = {}
+
+    local outline = Drawing.new("Square")
+    outline.Thickness = 3
+    outline.Filled = false
+    outline.Transparency = 1
+    outline.Visible = false
+
+    local fill = Drawing.new("Square")
+    fill.Thickness = 1
+    fill.Filled = false
+    fill.Transparency = 1
+    fill.Visible = false
+
+    Box.Box.outline = outline
+    Box.Box.fill = fill
+
+    Box.Corner.fill = {}
+    Box.Corner.outline = {}
+
+    for i = 1, 8 do
+        local oLine = Drawing.new("Line")
+        oLine.Thickness = 3
+        oLine.Transparency = 1
+        oLine.Visible = false
+
+        local fLine = Drawing.new("Line")
+        fLine.Thickness = 1
+        fLine.Transparency = 1
+        fLine.Visible = false
+        
+        table.insert(Box.Corner.fill, fLine)
+        table.insert(Box.Corner.outline, oLine)
+    end
+
+    Esp_Render.EspInstance[p1] = Esp_Render.EspInstance[p1] or {}
+    Esp_Render.EspInstance[p1].Box = Box
+end
+
+function Esp_Render.EspFunctions.Add_health(p1: Instance?)
+    if not p1 or (Esp_Render.EspInstance[p1] and Esp_Render.EspInstance[p1].Healthbar) then return end
+    local Healthbar = {}
+
+    local outline = Drawing.new("Square")
+    outline.Thickness = 1
+    outline.Filled = false
+    outline.Transparency = 1
+
+    local fill = Drawing.new("Square")
+    fill.Filled = true
+    fill.Transparency = 1
+
+    table.insert(Healthbar, outline)
+    table.insert(Healthbar, fill)
+
+    Esp_Render.EspInstance[p1] = Esp_Render.EspInstance[p1] or {}
+    Esp_Render.EspInstance[p1].Healthbar = Healthbar
+
+end
+
+function Esp_Render.EspFunctions.remove_box(p1: Instance?)
+    if Esp_Render.EspInstance[p1] and Esp_Render.EspInstance[p1].Box then
+        local Box = Esp_Render.EspInstance[p1].Box
+        if Box.Box.outline then Box.Box.outline:Remove() end
+        if Box.Box.fill then Box.Box.fill:Remove() end
+        if Box.Corner.fill then
+            for _, line in ipairs(Box.Corner.fill) do line:Remove() end
+        end
+        if Box.Corner.outline then
+            for _, line in ipairs(Box.Corner.outline) do line:Remove() end
+        end
+        Esp_Render.EspInstance[p1].Box = nil
+    end
+end
+
+function Esp_Render.EspFunctions.remove_text(p1: Instance?)
+    if Esp_Render.EspInstance[p1] and Esp_Render.EspInstance[p1].Username then
+        Esp_Render.EspInstance[p1].Username:Remove()
+
+    end
+end
+
+function Esp_Render.EspFunctions.add_Text(p1: Instance?)
+    if not p1 or (Esp_Render.EspInstance[p1] and Esp_Render.EspInstance[p1].Username) then return end
+
+    local text = Drawing.new("Text")
+    text.Center = true
+    text.Outline = true
+    text.Font = 1
+    text.Transparency = 1
+
+    Esp_Render.EspInstance[p1] = Esp_Render.EspInstance[p1] or {}
+    Esp_Render.EspInstance[p1].Username = text
+
+end
+
+function Esp_Render.EspFunctions.set_box_type(Vaule)
+    table.insert(Esp_Render.Box_Render.Type_Render, Vaule)
+end
+
+function Esp_Render.EspFunctions.Set(Character:Instance?)
+    Esp_Render.EspFunctions.add_box(Character)
+    Esp_Render.EspFunctions.add_Text(Character)
+end
+
+function Esp_Render.EspFunctions.Set_Connection(Player:Player)
+    Esp_Render.CachedRbxConnections[Player] = Player.CharacterAdded:Connect(function(character)
+        character:WaitForChild('Humanoid', 5)
+        character:WaitForChild('HumanoidRootPart', 5)
+        Esp_Render.EspFunctions.Set(character)
+    end)
+    
+    Player.CharacterRemoving:Connect(function(character)
+        Esp_Render.EspFunctions.remove_box(character)
+        Esp_Render.EspFunctions.remove_text(character)
+    end)
+
+    if Player.Character then
+        Esp_Render.EspFunctions.Set(Player.Character)
+    end
+end
+
+function Esp_Render.EspFunctions.Remove_Connection(Player:Player)
+    if Esp_Render.CachedRbxConnections[Player] then
+        Esp_Render.CachedRbxConnections[Player]:Disconnect()
+        Esp_Render.CachedRbxConnections[Player] = nil
+    end
+    if Player.Character then
+        Esp_Render.EspFunctions.remove_box(Player.Character)
+        Esp_Render.EspFunctions.remove_text(Player.Character)
+    end
+end
+
+function Esp_Render.EspFunctions.Render()
+    if not Esp_Render.Enabled then
+        for _, data in pairs(Esp_Render.EspInstance) do
+            if data.Box then
+                if data.Box.Box.outline then data.Box.Box.outline.Visible = false end
+                if data.Box.Box.fill then data.Box.Box.fill.Visible = false end
+                if data.Box.Corner.outline then
+                    for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
+                    for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
+                end
+            end
+
+            if data.Username then
+                data.Username.Visible = false
+            end
+        end
+        return
+    end
+
+    for character, data in pairs(Esp_Render.EspInstance) do
+        if character and character.Parent and character:FindFirstChild('HumanoidRootPart') and character:FindFirstChildOfClass('Humanoid') then
+            local humanoid = character:FindFirstChildOfClass('Humanoid')
+            if humanoid.Health <= 0 then
+                if data.Box then
+                    data.Box.Box.outline.Visible = false
+                    data.Box.Box.fill.Visible = false
+                    for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
+                    for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
+                end
+                continue
+            end
+
+            local hrp = character:FindFirstChild('HumanoidRootPart')
+            local pos, onScreen = __Camera:WorldToViewportPoint(hrp.Position)
+
+            if onScreen and data.Box then
+                local _, size = Esp_Render.EspFunctions.ResolveTarget(hrp)
+                if size then
+                    local topLeft = Vector2.new(pos.X - size.X / 2, pos.Y - size.Y / 2)
+                    local bottomRight = Vector2.new(pos.X + size.X / 2, pos.Y + size.Y / 2)
+
+                    local renderBox = table.find(Esp_Render.Box_Render.Type_Render, "Box") ~= nil
+                    if Esp_Render.Box_Render.Enabled and renderBox then
+                        data.Box.Box.outline.Size = size
+                        data.Box.Box.outline.Position = topLeft
+                        data.Box.Box.outline.Color = Esp_Render.Box_Render.outline
+                        data.Box.Box.outline.Visible = true
+
+                        data.Box.Box.fill.Size = size
+                        data.Box.Box.fill.Position = topLeft
+                        data.Box.Box.fill.Color = Esp_Render.Box_Render.fill
+                        data.Box.Box.fill.Visible = true
+                    else
+                        data.Box.Box.outline.Visible = false
+                        data.Box.Box.fill.Visible = false
+                    end
+
+
+                    local renderCorner = table.find(Esp_Render.Box_Render.Type_Render, "Corner") ~= nil
+                    if Esp_Render.Box_Render.Enabled and renderCorner then
+                        local w = size.X
+                        local h = size.Y
+                        local lengthX = w / 4
+                        local lengthY = h / 4
+
+                        local linesOutline = data.Box.Corner.outline
+                        local linesFill = data.Box.Corner.fill
+
+                        local corners = {
+                            {topLeft, Vector2.new(topLeft.X + lengthX, topLeft.Y), Vector2.new(topLeft.X, topLeft.Y + lengthY)},
+                            {Vector2.new(bottomRight.X, topLeft.Y), Vector2.new(bottomRight.X - lengthX, topLeft.Y), Vector2.new(bottomRight.X, topLeft.Y + lengthY)},
+                            {Vector2.new(topLeft.X, bottomRight.Y), Vector2.new(topLeft.X + lengthX, bottomRight.Y), Vector2.new(topLeft.X, bottomRight.Y - lengthY)}, 
+                            {bottomRight, Vector2.new(bottomRight.X - lengthX, bottomRight.Y), Vector2.new(bottomRight.X, bottomRight.Y - lengthY)}
+                        }
+
+                        local lineIdx = 1
+                        for _, corner in ipairs(corners) do
+                            linesOutline[lineIdx].From = corner[1]
+                            linesOutline[lineIdx].To = corner[2]
+                            linesOutline[lineIdx].Color = Esp_Render.Box_Render.outline
+                            linesOutline[lineIdx].Visible = true
+
+                            linesFill[lineIdx].From = corner[1]
+                            linesFill[lineIdx].To = corner[2]
+                            linesFill[lineIdx].Color = Esp_Render.Box_Render.fill
+                            linesFill[lineIdx].Visible = true
+                            lineIdx += 1
+
+                            linesOutline[lineIdx].From = corner[1]
+                            linesOutline[lineIdx].To = corner[3]
+                            linesOutline[lineIdx].Color = Esp_Render.Box_Render.outline
+                            linesOutline[lineIdx].Visible = true
+
+                            linesFill[lineIdx].From = corner[1]
+                            linesFill[lineIdx].To = corner[3]
+                            linesFill[lineIdx].Color = Esp_Render.Box_Render.fill
+                            linesFill[lineIdx].Visible = true
+                            lineIdx += 1
+                        end
+                    else
+                        for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
+                        for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
+                    end
+                else
+                    data.Box.Box.outline.Visible = false
+                    data.Box.Box.fill.Visible = false
+                    for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
+                    for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
+                end
+
+
+                if Esp_Render.Name_Render.Enabled and data.Username  then
+                    local posb, size = Esp_Render.EspFunctions.ResolveTarget(hrp)
+                    local textX = posb.X
+                    local textY = 0
+
+                    local dynamicOffset = math.clamp(size.Y * 0.25, 10, 20)
+
+                    if Esp_Render.Name_Render.Position == 'Up' then
+                        textY = (pos.Y - size.Y / 2) - dynamicOffset
+                    else 
+                        textY = (pos.Y + size.Y / 2) + 2
+                    end
+
+                    data.Username.Position = Vector2.new(textX, textY)
+                    data.Username.Color = Esp_Render.Name_Render.Color
+                    data.Username.Visible = true
+                    data.Username.Text = __Users:GetPlayerFromCharacter(character).DisplayName
+
+                    if Esp_Render.Name_Render.AutoSize then
+                        local DynSize = Esp_Render.EspFunctions.ResolveText(hrp)
+                        data.Username.Size = DynSize
+                    else
+                        data.Username.Size = Esp_Render.Name_Render.Size
+                    end
+                else
+                    if data.Username then
+                        data.Username.Visible = false
+                    end
+                end
+
+            else
+                if data.Box then
+                    data.Box.Box.outline.Visible = false
+                    data.Box.Box.fill.Visible = false
+                    for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
+                    for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
+                end
+
+                if data.Username then
+                    data.Username.Visible = false
+                end
+            end
+        end
+    end
+end
+
+
+for _, player in ipairs(__Users:GetPlayers()) do
+    if player ~= __Users.LocalPlayer then
+        Esp_Render.EspFunctions.Set_Connection(player)
+    end
+end
+
+__Users.PlayerAdded:Connect(function(player)
+    if player ~= __Users.LocalPlayer then
+        Esp_Render.EspFunctions.Set_Connection(player)
+    end
+end)
+
+__Users.PlayerRemoving:Connect(function(player)
+    Esp_Render.EspFunctions.Remove_Connection(player)
+end)
+
+__RunService.RenderStepped:Connect(function(deltaTime)
+    Esp_Render.EspFunctions.Render()
+end)
+
+return Esp_Render
