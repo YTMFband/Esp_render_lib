@@ -231,6 +231,11 @@ function Esp_Render.EspFunctions.Render()
                     for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
                     for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
                 end
+                
+                if data.Username then
+                    data.Username.Visible = false
+                end
+
                 continue
             end
 
