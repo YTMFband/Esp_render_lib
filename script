@@ -165,6 +165,7 @@ function Esp_Render.EspFunctions.add_Text(p1: Instance?)
 end
 
 function Esp_Render.EspFunctions.set_box_type(Vaule)
+    Esp_Render.Box_Render.Type_Render = {}
     table.insert(Esp_Render.Box_Render.Type_Render, Vaule)
 end
 
