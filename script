@@ -5,17 +5,17 @@ local __RunService = game:GetService('RunService')
 local Esp_Render = getgenv().Esp_Render
 if not Esp_Render then
     Esp_Render = {
-        Enabled = false;
+        Enabled = true;
 
         Box_Render = {
-            Enabled = false;
-            Type_Render = {'Box'}; --- I wanted make box + corner but useless
+            Enabled = true;
+            Type_Render = {'Corner'}; --- I wanted make box + corner but useless
             fill = Color3.new(1, 1, 1),
             outline = Color3.new(0,0,0),
         },
 
         Name_Render = {
-            Enabled = false;
+            Enabled = true;
             Size = 13;
             AutoSize = true;
             Position = 'Up', -- Or 'Down' or 'Up'
@@ -25,6 +25,7 @@ if not Esp_Render then
         EspInstance = {};
         EspFunctions = {};
         CachedRbxConnections = {};
+        Esp_RenderWhitelist = {};
     }
 end
 
@@ -222,16 +223,18 @@ function Esp_Render.EspFunctions.Render()
     end
 
     for character, data in pairs(Esp_Render.EspInstance) do
+        local Player = __Users:GetPlayerFromCharacter(character)
+
         if character and character.Parent and character:FindFirstChild('HumanoidRootPart') and character:FindFirstChildOfClass('Humanoid') then
             local humanoid = character:FindFirstChildOfClass('Humanoid')
-            if humanoid.Health <= 0 then
+            if humanoid.Health <= 0 or Esp_Render.Esp_RenderWhitelist[Player.DisplayName] then
                 if data.Box then
                     data.Box.Box.outline.Visible = false
                     data.Box.Box.fill.Visible = false
                     for _, line in ipairs(data.Box.Corner.outline) do line.Visible = false end
                     for _, line in ipairs(data.Box.Corner.fill) do line.Visible = false end
                 end
-                
+
                 if data.Username then
                     data.Username.Visible = false
                 end
@@ -334,7 +337,7 @@ function Esp_Render.EspFunctions.Render()
                     data.Username.Position = Vector2.new(textX, textY)
                     data.Username.Color = Esp_Render.Name_Render.Color
                     data.Username.Visible = true
-                    data.Username.Text = __Users:GetPlayerFromCharacter(character).DisplayName
+                    data.Username.Text = Player.DisplayName
 
                     if Esp_Render.Name_Render.AutoSize then
                         local DynSize = Esp_Render.EspFunctions.ResolveText(hrp)
