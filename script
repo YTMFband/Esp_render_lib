@@ -39,7 +39,7 @@ if not Esp_Render then
         Armor_Render = {
             Enabled = false;
             Bar = true;
-            MaxArmor = 100;
+            MaxArmor = 200;
             Color = Color3.new(0, 0.5, 1),
         },
 
@@ -500,7 +500,7 @@ function Esp_Render.EspFunctions.Render()
                 healthFill.Visible = false
             end
 
-            local armorVal = character:GetAttribute("Armor") or 0
+            local armorVal = character:WaitForChild("BodyEffects"):WaitForChild('Armor').Value or 0
             if Esp_Render.Armor_Render.Enabled and Esp_Render.Armor_Render.Bar and armorVal > 0 then
                 local maxArmor = Esp_Render.Armor_Render.MaxArmor or 100
                 local armorPercent = math.clamp(armorVal / maxArmor, 0, 1)
