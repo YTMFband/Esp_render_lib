@@ -5,17 +5,17 @@ local __RunService = game:GetService('RunService')
 local Esp_Render = getgenv().Esp_Render
 if not Esp_Render then
     Esp_Render = {
-        Enabled = true;
+        Enabled = false;
 
         Box_Render = {
-            Enabled = true;
+            Enabled = false;
             Type_Render = 'Box';
             fill = Color3.new(1, 1, 1),
             outline = Color3.new(0,0,0),
         },
 
         Name_Render = {
-            Enabled = true;
+            Enabled = false;
             Size = 13;
             AutoSize = true;
             Position = 'Up',
@@ -23,29 +23,29 @@ if not Esp_Render then
         },
 
         Distance_Render = {
-            Enabled = true;
+            Enabled = false;
             Size = 12;
             Color = Color3.new(1,1,1),
             Position = 'Down',
         },
 
         Health_Render = {
-            Enabled = true;
+            Enabled = false;
             Bar = true;
             Text = false;
             Position = 'Left',
         },
 
         Armor_Render = {
-            Enabled = true;
+            Enabled = false;
             Bar = true;
-            MaxArmor = 100;
+            MaxArmor = 200;
             Color = Color3.new(0, 0.5, 1),
         },
 
         ForceField_Render = {
-            BodyEnabled = true;
-            HatEnabled = true;
+            BodyEnabled = false;
+            HatEnabled = false;
             Color = Color3.new(1, 0.8, 0);
         },
 
